@@ -98,31 +98,30 @@ def _relevant_claims(
     return relevant_claims_oneline
 
 def _readmit_merge(
-        src: DataFrame,
-        readmit: DataFrame
+        relevant_claims: DataFrame,
     ) -> DataFrame:
     
-    readmits = readmit.withColumnRenamed(
-        'prm_plannedadmit_thrusnf_elig_yn',
-        'planned_readmit_thrusnf_elig_yn',
-    ).withColumnRenamed(
-        'prm_plannedadmit_thrusnf_yn',
-        'plannedadmit_thrusnf_yn',
+    readmits = relevant_claims.select(
+        'member_id',
+        spark_funcs.col('caseadmitid').alias('prm_readmit_all_cause_caseid'),
+        spark_funcs.col('prm_plannedadmit_thrusnf_elig_yn').alias('planned_readmit_thrusnf_elig_yn'),
+        spark_funcs.col('prm_plannedadmit_thrusnf_yn').alias('plannedadmit_thrusnf_yn'),
     )
-    readmit_merge = src.join(
+    
+    readmit_merge = relevant_claims.join(
         readmits,
-        on=(src.member_id == readmit.member_id)
-        & (src.prm_readmit_all_cause_caseid == readmit.caseadmitid),
+        on=['member_id', 'prm_readmit_all_cause_caseid'],
         how='left_outer',
     ).select(
-        *[src.columns],
-        src.prm_todate_case.alias('risk_window_start'),
+        '*',
+        spark_funcs.col('prm_todate_case').alias('risk_window_start'),
         spark_funcs.date_add(
-            src.prm_todate_case,
+            spark_funcs.col('prm_todate_case'),
             30
         ).alias('risk_window_end'),
-        'planned_readmit_thrusnf_elig_yn',
-        'plannedadmit_thrusnf_yn'
+    ).where(
+        (spark_funcs.col('stay_type') == 'IP_Acute')
+        & (spark_funcs.col('prm_acute_transfer_to_snf_yn') == 'Y')
     )
         
     return readmit_merge
@@ -142,7 +141,6 @@ def calculate_snfrm_decorator(
     
     readmit_merge = _readmit_merge(
         relevant_claims,
-        relevant_claims
     )
     
     return claims_flagged
