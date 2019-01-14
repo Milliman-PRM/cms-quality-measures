@@ -14,6 +14,7 @@ import logging
 from pyspark.sql import DataFrame
 from pyspark.sql import Window
 import pyspark.sql.functions as spark_funcs
+from prm.dates.utils import date_as_month
 
 from prm.decorators.base_classes import ClaimDecorator
 MIN_AGE = 65
@@ -229,6 +230,67 @@ def _snf_irf_flags(
     
     return snf_irf_flags
 
+def _calc_mem_elig(
+        readmit_merge: DataFrame,
+        member_months: DataFrame
+    ) -> DataFrame:
+    
+    elig_months = member_months.where(
+        spark_funcs.col('cover_medical') == 'Y'
+    ).select(
+        'member_id',
+        'elig_month',
+    ).distinct()
+    
+    discharges = readmit_merge.select(
+        'member_id',
+        'caseadmitid',
+        'prm_fromdate_case',
+        'prm_todate_case',
+        spark_funcs.add_months(
+            spark_funcs.col('prm_todate_case'),
+            -12
+        ).alias('target_elig_start'),
+        spark_funcs.last_day(
+            spark_funcs.date_add(
+                spark_funcs.col('prm_todate_case'),
+                30
+            )
+        ).alias('fromdate_window_end')
+    ).withColumn(
+        'fromdate_window_beg',
+        spark_funcs.concat_ws(
+            '-',
+            spark_funcs.year('target_elig_start'),
+            spark_funcs.lpad(spark_funcs.month('target_elig_start'), 2, '0'),
+            spark_funcs.lit('01')
+        ).cast('date')
+    ).drop(
+        'target_elig_start',
+    )
+        
+    discharges_w_mem = discharges.join(
+        elig_months,
+        on=(discharges.member_id == elig_months.member_id)
+        & (elig_months.elig_month.between(
+            discharges.fromdate_window_beg,
+            discharges.fromdate_window_end
+        )),
+        how='left_outer'
+    ).groupBy(
+        discharges.member_id,
+        'caseadmitid',
+        'prm_fromdate_case',
+        'prm_todate_case',
+    ).agg(
+        spark_funcs.count('elig_month').alias('enrollment_count')
+    ).where(
+        spark_funcs.col('enrollment_count') >= 13
+    )
+        
+    return discharges_w_mem
+
+
 def calculate_snfrm_decorator(
         dfs_input: "typing.Mapping[str, DataFrame]",
         **kwargs
@@ -249,6 +311,16 @@ def calculate_snfrm_decorator(
     snf_irf_flags = _snf_irf_flags(
         relevant_claims,
         readmit_merge,
+    )
+    
+    membership_elig = _calc_mem_elig(
+        readmit_merge,
+        dfs_input['member_time']
+    )
+
+    all_eligible = _calc_measure_elig(
+        snf_irf_flags,
+        membership_elig
     )
     
     return claims_flagged
