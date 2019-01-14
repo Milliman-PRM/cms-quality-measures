@@ -84,6 +84,7 @@ def _relevant_claims(
         'prm_todate_case',
     ).orderBy(
         'prm_todate_case',
+        spark_funcs.desc('prm_admits'),
     )
     
     relevant_claims_oneline = relevant_claims.withColumn(
@@ -126,6 +127,108 @@ def _readmit_merge(
         
     return readmit_merge
 
+def _snf_irf_flags(
+        relevant_claims: DataFrame,
+        readmit_merge: DataFrame,
+    ) -> DataFrame:
+    
+    snf_claims = relevant_claims.where(
+        spark_funcs.col('stay_type') == 'SNF'
+    ).withColumn(
+        'snf_exclusion',
+        spark_funcs.when(
+            spark_funcs.col('dischargestatus').isin(['07', '20']),
+            spark_funcs.lit(1),
+        ).otherwise(
+            spark_funcs.lit(0)
+        )
+    ).groupBy(
+        'member_id',
+        spark_funcs.col('prm_fromdate_case').alias('snf_fromdate'),
+    ).agg(
+        spark_funcs.max('snf_exclusion').alias('snf_exclusion')
+    )
+        
+    rehab_claims = relevant_claims.where(
+        spark_funcs.col('stay_type') == 'IP_Rehab'
+    ).select(
+        'member_id',
+        spark_funcs.col('prm_fromdate_case').alias('rehab_fromdate'),
+    ).distinct()
+    
+    snf_irf_flags = readmit_merge.join(
+        snf_claims,
+        on='member_id',
+        how='left_outer',
+    ).join(
+        rehab_claims,
+        on='member_id',
+        how='left_outer',
+    ).select(
+        'member_id',
+        'prm_readmit_all_cause_caseid',
+        'caseadmitid',
+        'dischargestatus',
+        'prm_fromdate_case',
+        'prm_todate_case',
+        'prm_acute_transfer_to_snf_yn',
+        'prm_plannedadmit_thrusnf_elig_yn',
+        'prm_plannedadmit_thrusnf_yn',
+        'prm_readmit_potential_yn',
+        'prm_readmit_all_cause_yn',
+        'prm_admits',
+        'ip_denom_exclusion_yn',
+        'stay_type',
+        'planned_readmit_thrusnf_elig_yn',
+        'plannedadmit_thrusnf_yn',
+        'risk_window_start',
+        'risk_window_end',
+        spark_funcs.when(
+            spark_funcs.col('snf_fromdate').between(
+                spark_funcs.col('risk_window_start'),
+                spark_funcs.col('risk_window_end'),
+            ),
+            spark_funcs.lit(1),
+        ).otherwise(
+            spark_funcs.lit(0)
+        ).alias('count_snf_in_risk_window'),
+        spark_funcs.when(
+            spark_funcs.col('rehab_fromdate').between(
+                spark_funcs.col('risk_window_start'),
+                spark_funcs.col('risk_window_end'),
+            ),
+            spark_funcs.lit(1),
+        ).otherwise(
+            spark_funcs.lit(0)
+        ).alias('count_rehab_in_risk_window'),
+        'snf_exclusion',
+    ).groupBy(
+        'member_id',
+        'prm_readmit_all_cause_caseid',
+        'caseadmitid',
+        'dischargestatus',
+        'prm_fromdate_case',
+        'prm_todate_case',
+        'prm_acute_transfer_to_snf_yn',
+        'prm_plannedadmit_thrusnf_elig_yn',
+        'prm_plannedadmit_thrusnf_yn',
+        'prm_readmit_potential_yn',
+        'prm_readmit_all_cause_yn',
+        'prm_admits',
+        'ip_denom_exclusion_yn',
+        'stay_type',
+        'planned_readmit_thrusnf_elig_yn',
+        'plannedadmit_thrusnf_yn',
+        'risk_window_start',
+        'risk_window_end',
+    ).agg(
+        spark_funcs.sum('count_snf_in_risk_window').alias('count_snf_in_risk_window'),
+        spark_funcs.sum('count_rehab_in_risk_window').alias('count_rehab_in_risk_window'),
+        spark_funcs.sum('snf_exclusion').alias('snf_exclusion'),
+    )
+    
+    return snf_irf_flags
+
 def calculate_snfrm_decorator(
         dfs_input: "typing.Mapping[str, DataFrame]",
         **kwargs
@@ -141,6 +244,11 @@ def calculate_snfrm_decorator(
     
     readmit_merge = _readmit_merge(
         relevant_claims,
+    )
+    
+    snf_irf_flags = _snf_irf_flags(
+        relevant_claims,
+        readmit_merge,
     )
     
     return claims_flagged
