@@ -28,11 +28,11 @@ def _relevant_claims(
         member: DataFrame,
         reference: DataFrame
     ) -> DataFrame:
-    
+
     ip_claims = outclaims.where(
         spark_funcs.col('prm_line').startswith('I')
     )
-    
+
     relevant_claims = ip_claims.join(
         member,
         on='member_id',
@@ -77,7 +77,7 @@ def _relevant_claims(
             spark_funcs.lit('IP_Acute')
         ).alias('stay_type')
     )
-    
+
     relevant_window = Window().partitionBy(
         'member_id',
         'prm_fromdate_case',
@@ -86,7 +86,7 @@ def _relevant_claims(
         'prm_todate_case',
         spark_funcs.desc('prm_admits'),
     )
-    
+
     relevant_claims_oneline = relevant_claims.withColumn(
         'row',
         spark_funcs.row_number().over(relevant_window)
@@ -95,20 +95,20 @@ def _relevant_claims(
     ).drop(
         'row'
     )
-    
+
     return relevant_claims_oneline
 
 def _readmit_merge(
         relevant_claims: DataFrame,
     ) -> DataFrame:
-    
+
     readmits = relevant_claims.select(
         'member_id',
         spark_funcs.col('caseadmitid').alias('prm_readmit_all_cause_caseid'),
         spark_funcs.col('prm_plannedadmit_thrusnf_elig_yn').alias('planned_readmit_thrusnf_elig_yn'),
         spark_funcs.col('prm_plannedadmit_thrusnf_yn').alias('plannedadmit_thrusnf_yn'),
     )
-    
+
     readmit_merge = relevant_claims.join(
         readmits,
         on=['member_id', 'prm_readmit_all_cause_caseid'],
@@ -124,14 +124,14 @@ def _readmit_merge(
         (spark_funcs.col('stay_type') == 'IP_Acute')
         & (spark_funcs.col('prm_acute_transfer_to_snf_yn') == 'Y')
     )
-        
+
     return readmit_merge
 
 def _snf_irf_flags(
         relevant_claims: DataFrame,
         readmit_merge: DataFrame,
     ) -> DataFrame:
-    
+
     snf_claims = relevant_claims.where(
         spark_funcs.col('stay_type') == 'SNF'
     ).withColumn(
@@ -148,14 +148,14 @@ def _snf_irf_flags(
     ).agg(
         spark_funcs.max('snf_exclusion').alias('snf_exclusion')
     )
-        
+
     rehab_claims = relevant_claims.where(
         spark_funcs.col('stay_type') == 'IP_Rehab'
     ).select(
         'member_id',
         spark_funcs.col('prm_fromdate_case').alias('rehab_fromdate'),
     ).distinct()
-    
+
     snf_irf_flags = readmit_merge.join(
         snf_claims,
         on='member_id',
@@ -226,21 +226,21 @@ def _snf_irf_flags(
         spark_funcs.sum('count_rehab_in_risk_window').alias('count_rehab_in_risk_window'),
         spark_funcs.sum('snf_exclusion').alias('snf_exclusion'),
     )
-    
+
     return snf_irf_flags
 
 def _calc_mem_elig(
         readmit_merge: DataFrame,
         member_months: DataFrame
     ) -> DataFrame:
-    
+
     elig_months = member_months.where(
         spark_funcs.col('cover_medical') == 'Y'
     ).select(
         'member_id',
         'elig_month',
     ).distinct()
-    
+
     discharges = readmit_merge.select(
         'member_id',
         'caseadmitid',
@@ -267,7 +267,7 @@ def _calc_mem_elig(
     ).drop(
         'target_elig_start',
     )
-        
+
     discharges_w_mem = discharges.join(
         elig_months,
         on=(discharges.member_id == elig_months.member_id)
@@ -286,14 +286,14 @@ def _calc_mem_elig(
     ).where(
         spark_funcs.col('enrollment_count') >= 13
     )
-        
+
     return discharges_w_mem
 
 def _calc_measure_elig(
         claims_flagged: DataFrame,
         membership_elig: DataFrame,
     ) -> DataFrame:
-    
+
     measure_eligible = claims_flagged.join(
         membership_elig,
         on=['member_id', 'caseadmitid', 'prm_fromdate_case', 'prm_todate_case'],
@@ -329,14 +329,14 @@ def _calc_measure_elig(
             spark_funcs.lit('N')
         ).alias('snfrm_numer_yn'),
     )
-        
+
     return measure_eligible
 
 def _flag_all_claims(
         outclaims: DataFrame,
         all_eligible: DataFrame
     ) -> DataFrame:
-    
+
     snf_cases = outclaims.where(
         spark_funcs.col('prm_line') == 'I31'
     ).select(
@@ -345,7 +345,7 @@ def _flag_all_claims(
         spark_funcs.col('prm_fromdate_case').alias('snf_fromdate_case'),
         spark_funcs.col('prm_todate_case').alias('snf_todate_case'),
     ).distinct()
-    
+
     snf_decorated = all_eligible.join(
         snf_cases,
         on='member_id',
@@ -364,7 +364,7 @@ def _flag_all_claims(
         spark_funcs.col('snfrm_numer_yn'),
         spark_funcs.col('snfrm_denom_yn'),
     )
-    
+
     claims_decorated = outclaims.join(
         snf_decorated,
         on=['member_id', 'caseadmitid'],
@@ -384,8 +384,8 @@ def _flag_all_claims(
             spark_funcs.col('snfrm_denom_yn')
         ).alias('snfrm_denom_yn'),
         'prm_admits',
-    )    
-        
+    )
+
     return claims_decorated
 
 def calculate_snfrm_decorator(
@@ -394,22 +394,22 @@ def calculate_snfrm_decorator(
     ) -> DataFrame:
     """Calculate numerator and denominator for SNF readmission rate quality measure"""
     LOGGER.info('Calculating SNFRM decorator')
-   
+
     relevant_claims = _relevant_claims(
         dfs_input['outclaims'],
         dfs_input['member'],
         dfs_input['reference'],
     )
-    
+
     readmit_merge = _readmit_merge(
         relevant_claims,
     )
-    
+
     snf_irf_flags = _snf_irf_flags(
         relevant_claims,
         readmit_merge,
     )
-    
+
     membership_elig = _calc_mem_elig(
         readmit_merge,
         dfs_input['member_time']
@@ -419,12 +419,12 @@ def calculate_snfrm_decorator(
         snf_irf_flags,
         membership_elig
     )
-    
+
     claims_decorated = _flag_all_claims(
         dfs_input['outclaims'],
         all_eligible
     )
-    
+
     return claims_decorated
 
 class SNFRMDecorator(ClaimDecorator):
