@@ -371,19 +371,12 @@ def _flag_all_claims(
         how='left_outer',
     ).select(
         'sequencenumber',
-        spark_funcs.when(
-            spark_funcs.col('snfrm_numer_yn').isNull(),
-            spark_funcs.lit('N')
-        ).otherwise(
-            spark_funcs.col('snfrm_numer_yn')
-        ).alias('snfrm_numer_yn'),
-        spark_funcs.when(
-            spark_funcs.col('snfrm_denom_yn').isNull(),
-            spark_funcs.lit('N')
-        ).otherwise(
-            spark_funcs.col('snfrm_denom_yn')
-        ).alias('snfrm_denom_yn'),
-    )
+        'snfrm_numer_yn',
+        'snfrm_denom_yn',
+    ).fillna({
+        'snfrm_numer_yn': 'N',
+        'snfrm_denom_yn': 'N',
+    })
 
     return claims_decorated
 
