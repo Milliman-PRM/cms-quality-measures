@@ -1,0 +1,4 @@
+name,datatype,nullable
+sequencenumber,long,TRUE
+snfrm_numer_yn,string,TRUE
+snfrm_denom_yn,string,TRUE
