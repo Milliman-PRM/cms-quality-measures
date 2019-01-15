@@ -1,0 +1,4 @@
+name,datatype,nullable
+member_id,string,true
+elig_month,date,true
+cover_medical,string,true
