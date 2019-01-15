@@ -383,7 +383,6 @@ def _flag_all_claims(
         ).otherwise(
             spark_funcs.col('snfrm_denom_yn')
         ).alias('snfrm_denom_yn'),
-        'prm_admits',
     )
 
     return claims_decorated
