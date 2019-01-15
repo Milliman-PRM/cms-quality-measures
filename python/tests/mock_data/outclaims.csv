@@ -1,4 +1,4 @@
-sequencenumber,member_id,caseadmitid,dischargestatus,prm_fromdate_case,prm_todate_case,prm_acute_transfer_to_snf_yn,prm_plannedadmit_thrusnf_elig_yn,prm_plannedadmit_thrusnf_yn,prm_readmit_potential_yn,prm_readmit_all_cause_yn,prm_readmit_all_cause_caseid,prm_admits,icddiag1 ,prm_line
+sequencenumber,member_id,caseadmitid,dischargestatus,prm_fromdate_case,prm_todate_case,prm_acute_transfer_to_snf_yn,prm_plannedadmit_thrusnf_elig_yn,prm_plannedadmit_thrusnf_yn,prm_readmit_potential_yn,prm_readmit_all_cause_yn,prm_readmit_all_cause_caseid,prm_admits,icddiag1,prm_line
 1,standard_snfrm,prior_ip,03,2018-01-01,2018-01-15,Y,N,N,Y,Y,readmit,1,A150,I11a
 2,standard_snfrm,snf_stay,02,2018-01-15,2018-01-25,N,N,N,N,N,none,1,A150,I31
-3,standard_snfrm,readmit,01,2018-01-25,2018-02-01,N,Y,N,N,N,none,1,A150,I31
+3,standard_snfrm,readmit,01,2018-01-25,2018-02-01,N,Y,N,N,N,none,1,A150,I11a

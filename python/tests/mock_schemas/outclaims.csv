@@ -12,5 +12,5 @@ prm_readmit_potential_yn,string,TRUE
 prm_readmit_all_cause_yn,string,TRUE
 prm_readmit_all_cause_caseid,string,TRUE
 prm_admits,long,TRUE
-icddiag1 ,string,TRUE
+icddiag1,string,TRUE
 prm_line,string,TRUE
