@@ -1,0 +1,16 @@
+name,datatype,nullable
+sequencenumber,long,TRUE
+member_id,string,TRUE
+caseadmitid,string,TRUE
+dischargestatus,string,TRUE
+prm_fromdate_case,date,TRUE
+prm_todate_case,date,TRUE
+prm_acute_transfer_to_snf_yn,string,TRUE
+prm_plannedadmit_thrusnf_elig_yn,string,TRUE
+prm_plannedadmit_thrusnf_yn,string,TRUE
+prm_readmit_potential_yn,string,TRUE
+prm_readmit_all_cause_yn,string,TRUE
+prm_readmit_all_cause_caseid,string,TRUE
+prm_admits,long,TRUE
+icddiag1 ,string,TRUE
+prm_line,string,TRUE
