@@ -17,13 +17,13 @@ import pytest
 from pyspark import Row
 import pyspark.sql.functions as spark_funcs
 
-import cms_quality_measures.decorator
+import NYHealth_cms_quality_measures.decorator
 from prm.spark.io_txt import build_structtype_from_csv
 
 try:
     _PATH_THIS_FILE = Path(__file__).parent
 except NameError:
-    _PARTS = list(Path(cms_quality_measures.decorator.__file__).parent.parts)
+    _PARTS = list(Path(NYHealth_cms_quality_measures.decorator.__file__).parent.parts)
     _PARTS[-1] = "tests"
     _PATH_THIS_FILE = Path(*_PARTS)  # pylint: disable=redefined-variable-type
 
@@ -62,7 +62,7 @@ def mock_dataframes(spark_app, mock_schemas):
 
 def test_pss(mock_dataframes):
     """Test the avoidable claim identification"""
-    test_instance = cms_quality_measures.decorator.SNFRMDecorator()
+    test_instance = NYHealth_cms_quality_measures.decorator.SNFRMDecorator()
     actual_result = test_instance.calc_decorator(dfs_input=mock_dataframes)
     actual_result.cache()
     expected_result = mock_dataframes["snfrm_results"].select(
