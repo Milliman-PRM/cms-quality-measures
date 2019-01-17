@@ -69,6 +69,8 @@ multi_readmit,2017-11-15,Y
 multi_readmit,2017-12-15,Y
 multi_readmit,2018-01-15,Y
 multi_readmit,2018-02-15,Y
+multi_readmit,2018-03-15,Y
+multi_readmit,2018-04-15,Y
 readmit_outside_window,2017-01-15,Y
 readmit_outside_window,2017-02-15,Y
 readmit_outside_window,2017-03-15,Y
@@ -83,3 +85,5 @@ readmit_outside_window,2017-11-15,Y
 readmit_outside_window,2017-12-15,Y
 readmit_outside_window,2018-01-15,Y
 readmit_outside_window,2018-02-15,Y
+readmit_outside_window,2018-03-15,Y
+readmit_outside_window,2018-04-15,Y
