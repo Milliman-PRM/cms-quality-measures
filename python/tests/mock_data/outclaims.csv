@@ -14,6 +14,5 @@ sequencenumber,member_id,caseadmitid,dischargestatus,prm_fromdate_case,prm_todat
 13,multi_readmit,prior_ip,03,2018-01-01,2018-01-15,Y,N,N,Y,Y,readmit,1,A150,I11a
 14,multi_readmit,snf_stay,02,2018-01-15,2018-01-25,N,N,N,N,N,none,1,A150,I31
 15,multi_readmit,readmit,01,2018-01-25,2018-02-01,N,Y,N,N,N,none,1,A150,I11a
-16,multi_readmit,readmit,01,2018-02-01,2018-02-05,N,Y,N,N,N,none,1,A150,I11a
-17,readmit_outside_window,prior_ip,03,2018-01-15,2018-01-25,Y,N,N,Y,Y,none,1,A150,I11a
-18,readmit_outside_window,snf_stay,01,2018-01-25,2018-02-01,N,N,N,N,N,none,1,A150,I31
+16,readmit_outside_window,prior_ip,03,2017-01-15,2017-01-25,Y,N,N,Y,Y,none,1,A150,I11a
+17,readmit_outside_window,snf_stay,01,2017-01-25,2017-02-01,N,N,N,N,N,none,1,A150,I31
