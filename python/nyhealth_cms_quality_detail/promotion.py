@@ -17,7 +17,7 @@ from indypy.nonstandard import promotion_tools
 
 LOGGER = logging.getLogger(__name__)
 
-PATH_RELEASE_NOTES = Path(os.environ["NYHEALTH_CMS_QUALITY_MEASURES_DETAIL"]) / "docs" / "release-notes.md"
+PATH_RELEASE_NOTES = Path(os.environ["NYHEALTH_CMS_QUALITY_MEASURES_DETAIL_HOME"]) / "docs" / "release-notes.md"
 PATH_PROMOTION = Path(r"S:\PRM\Pipeline_Components\NYHealth_CMS_Quality_Measures_Detail")
 
 # =============================================================================
