@@ -28,7 +28,7 @@ def _relevant_claims(
         member: DataFrame,
         reference: DataFrame
     ) -> DataFrame:
-
+    """Identify acute inpatient, SNF, and rehab admits. Keep one line per admission"""
     ip_claims = outclaims.where(
         spark_funcs.col('prm_line').startswith('I')
     )
@@ -101,7 +101,7 @@ def _relevant_claims(
 def _readmit_merge(
         relevant_claims: DataFrame,
     ) -> DataFrame:
-
+    """Join readmissions to original admission, add SNF transfer flags"""
     readmits = relevant_claims.select(
         'member_id',
         spark_funcs.col('caseadmitid').alias('prm_readmit_all_cause_caseid'),
@@ -131,7 +131,7 @@ def _snf_irf_flags(
         relevant_claims: DataFrame,
         readmit_merge: DataFrame,
     ) -> DataFrame:
-
+    """Identify if any additional SNF/Rehab stays occurred within 30 days of IP discharge"""
     snf_claims = relevant_claims.where(
         spark_funcs.col('stay_type') == 'SNF'
     ).withColumn(
@@ -233,7 +233,7 @@ def _calc_mem_elig(
         readmit_merge: DataFrame,
         member_months: DataFrame
     ) -> DataFrame:
-
+    """Calculate membership eligibility from 1 year period to discharge to 30 days after discharge"""
     elig_months = member_months.where(
         spark_funcs.col('cover_medical') == 'Y'
     ).select(
@@ -293,7 +293,7 @@ def _calc_measure_elig(
         claims_flagged: DataFrame,
         membership_elig: DataFrame,
     ) -> DataFrame:
-
+    """Calc eligibility per IP admission with SNF following for readmission"""
     measure_eligible = claims_flagged.join(
         membership_elig,
         on=['member_id', 'caseadmitid', 'prm_fromdate_case', 'prm_todate_case'],
@@ -336,7 +336,7 @@ def _flag_all_claims(
         outclaims: DataFrame,
         all_eligible: DataFrame
     ) -> DataFrame:
-
+    """Decorate all claims, regardless of prm_line"""
     snf_cases = outclaims.where(
         spark_funcs.col('prm_line') == 'I31'
     ).select(
