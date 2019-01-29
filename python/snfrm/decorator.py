@@ -346,6 +346,14 @@ def _flag_all_claims(
         spark_funcs.col('prm_todate_case').alias('snf_todate_case'),
     ).distinct()
 
+    snf_case_window = Window().partitionBy(
+        'member_id',
+        'caseadmitid',
+    ).orderBy(
+        spark_funcs.desc('snfrm_denom_yn'),
+        spark_funcs.desc('snfrm_numer_yn'),
+    )
+
     snf_decorated = all_eligible.join(
         snf_cases,
         on='member_id',
@@ -363,6 +371,13 @@ def _flag_all_claims(
         spark_funcs.col('snf_caseadmitid').alias('caseadmitid'),
         spark_funcs.col('snfrm_numer_yn'),
         spark_funcs.col('snfrm_denom_yn'),
+    ).withColumn(
+        'row',
+        spark_funcs.row_number().over(snf_case_window)
+    ).where(
+        spark_funcs.col('row') == 1
+    ).drop(
+        'row'
     )
 
     claims_decorated = outclaims.join(
