@@ -2,7 +2,7 @@
 
 A non-exhaustive list of what has changed in a more readable form than a commit history.
 
-### 1.0.0
+### v1.0.0
 
   - Initial release of product component
   - Identify SNF stays directly after inpatient admissions that lead to a readmission within 30 days.
